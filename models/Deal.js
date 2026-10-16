@@ -1,7 +1,7 @@
 const { Model, DataTypes } = require('sequelize')
 const sequelize = require('../connections')
 
-const STAGES = ['Lead', 'Contacted', 'Qualified', 'Proposal', 'Won']
+const STAGES = ['Lead', 'Contacted', 'Qualified', 'Proposal', 'Won', 'Loss']
 
 //define what a deal will look like
 class Deal extends Model { }

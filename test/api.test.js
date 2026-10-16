@@ -149,6 +149,8 @@ test('owner can edit, move and delete; bad stage rejected', async () => {
   const { body: { id } } = await a('POST', '/api/deals', { dealName: 'x', value: 1 })
   assert.equal((await a('PUT', `/api/deal/${id}`, { dealName: 'renamed' })).status, 200)
   assert.equal((await a('PUT', `/api/deals/${id}/Won`)).status, 200)
+  assert.equal((await a('PUT', `/api/deals/${id}/Loss`)).status, 200)
+  assert.equal((await a('PUT', `/api/deals/${id}/Won`)).status, 200)
   assert.equal((await a('PUT', `/api/deals/${id}/Bogus`)).status, 400)
   assert.deepEqual((await a('GET', `/api/deal/${id}`)).body.stage, 'Won')
   assert.equal((await a('DELETE', `/api/deal/${id}`)).status, 200)
