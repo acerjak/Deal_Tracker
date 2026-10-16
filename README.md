@@ -14,6 +14,16 @@
 
 Copy `.env.example` to `.env` and set `LOCAL_URL` to a MySQL database (requires Node 18+).
 
+Create a dedicated database user instead of using `root`:
+
+```sql
+CREATE DATABASE deal_tracker CHARACTER SET utf8mb4;
+CREATE USER 'deal_tracker'@'localhost' IDENTIFIED BY 'a-strong-password';
+GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,ALTER,INDEX,DROP,REFERENCES ON deal_tracker.* TO 'deal_tracker'@'localhost';
+```
+
+Tables are created on startup. After changing a model, back up (`mysqldump -u deal_tracker -p deal_tracker > backup.sql`), then start once with `DB_SYNC_ALTER=true` to apply the change to existing tables. Adding a unique or NOT NULL constraint fails if existing rows violate it, so clean those first.
+
 `npm start` runs the server; `npm run dev` restarts it on file changes.
 
 ## Deployed Link

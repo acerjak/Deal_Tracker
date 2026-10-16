@@ -1,9 +1,8 @@
-const User  = require('./User.js')
+const User = require('./User.js')
 const Deal = require('./Deal.js')
 
-//user has many deals
-User.hasMany(Deal, {targetKey:'userId',foreignKey: 'userId'})
-//deal only has one user
-Deal.belongsTo(User)
+// a user has many deals; a deal always belongs to a user
+User.hasMany(Deal, { foreignKey: { name: 'userId', allowNull: false }, onDelete: 'CASCADE' })
+Deal.belongsTo(User, { foreignKey: { name: 'userId', allowNull: false } })
 
 module.exports = { User, Deal }

@@ -14,12 +14,16 @@ app.use(require('./routes'))
 
 // central error handler for failures in async route handlers
 app.use((err, req, res, next) => {
+  const name = err.name || ''
+  if (name === 'SequelizeUniqueConstraintError') return res.status(409).json({ error: 'Already exists' })
+  if (name === 'SequelizeValidationError') return res.status(400).json({ error: err.errors.map(e => e.message).join(', ') })
+  if (name === 'SequelizeForeignKeyConstraintError') return res.status(400).json({ error: 'Unknown user' })
   console.error(err)
-  res.status(err.status || 500).json({ error: err.message })
+  res.status(err.status || 500).json({ error: 'Server error' })
 })
 
 sequelize
-  .sync()
+  .sync(process.env.DB_SYNC_ALTER === 'true' ? { alter: true } : {})
   .then(() => app.listen(port, () => console.log(`http://localhost:${port}`)))
   .catch(err => {
     console.error(err)

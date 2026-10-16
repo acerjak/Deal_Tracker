@@ -25,11 +25,12 @@ router.post('/deals', async (req, res) => {
 })
 // PUT one deal
 router.put('/deal/:id', async (req, res) => {
-  await Deal.update(pick(req.body), { where: { id: req.params.id } })
-  res.sendStatus(200)
+  const [count] = await Deal.update(pick(req.body), { where: { id: req.params.id } })
+  res.sendStatus(count ? 200 : 404)
 })
 // PUT deal stage (used by drag and drop)
 router.put('/deals/:id/:status', async (req, res) => {
+  if (!Deal.STAGES.includes(req.params.status)) return res.status(400).json({ error: 'Invalid stage' })
   await Deal.update({ stage: req.params.status }, { where: { id: req.params.id } })
   res.sendStatus(200)
 })

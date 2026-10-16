@@ -1,6 +1,8 @@
 const { Model, DataTypes } = require('sequelize')
 const sequelize = require('../connections')
 
+const STAGES = ['Lead', 'Contacted', 'Qualified', 'Proposal', 'Won']
+
 //define what a deal will look like
 class Deal extends Model { }
 Deal.init({
@@ -10,7 +12,8 @@ Deal.init({
   },
   value: {
     type: DataTypes.INTEGER,
-    allowNull: true
+    allowNull: true,
+    validate: { isInt: true, min: 0 }
   },
   organization: {
     type: DataTypes.STRING,
@@ -29,19 +32,21 @@ Deal.init({
     allowNull: true
   },
   notes: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   stage: {
     type: DataTypes.STRING,
-    allowNull: true,
-    defaultValue: "Lead"
+    allowNull: false,
+    defaultValue: 'Lead',
+    validate: { isIn: [STAGES] }
   },
   userId: {
     type: DataTypes.INTEGER,
-    autoIncrement: false,
-    foreignKey: true
+    allowNull: false
   }
 }, { sequelize, modelName: 'deal' })
+
+Deal.STAGES = STAGES
 
 module.exports = Deal
