@@ -12,6 +12,10 @@
 #### Please follow this command to install npm dependencies:
 > npm i
 
+Copy `.env.example` to `.env` and set `LOCAL_URL` to a MySQL database (requires Node 18+).
+
+`npm start` runs the server; `npm run dev` restarts it on file changes.
+
 ## Deployed Link
 > https://deal-tracker-app.herokuapp.com/deals.html
 

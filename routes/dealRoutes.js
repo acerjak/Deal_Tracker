@@ -1,45 +1,42 @@
 const router = require('express').Router()
 const { Deal } = require('../models')
-// GET all users
-router.get('/deals', (req, res) => {
-  Deal.findAll()
-    .then(deals => res.json(deals))
-    .catch(err => console.error(err))
+
+// only fields a client may set; blocks overwriting id/timestamps
+const pick = ({ dealName, value, organization, contact, phone, email, notes, stage, userId }) =>
+  ({ dealName, value, organization, contact, phone, email, notes, stage, userId })
+
+// GET all deals
+router.get('/deals', async (req, res) => {
+  res.json(await Deal.findAll())
 })
 // GET all deals by userId
-router.get('/deals/:userId', (req, res) => {
-  Deal.findAll({ where: { userId: req.params.userId }})
-    .then(deals => res.json(deals))
-    .catch(err => console.error(err))
+router.get('/deals/:userId', async (req, res) => {
+  res.json(await Deal.findAll({ where: { userId: req.params.userId } }))
 })
-// GET one deal // id = dealID?
-router.get('/deal/:id', (req, res) => {
-  Deal.findOne({ where: { id: req.params.id }})
-    .then(deal => res.json(deal))
-    .catch(err => console.error(err))
+// GET one deal
+router.get('/deal/:id', async (req, res) => {
+  const deal = await Deal.findByPk(req.params.id)
+  if (!deal) return res.sendStatus(404)
+  res.json(deal)
 })
 // POST one deal
-router.post('/deals', (req, res) => {
-  Deal.create(req.body)
-    .then(deal => res.json(deal))
-    .catch(err => console.error(err))
+router.post('/deals', async (req, res) => {
+  res.json(await Deal.create(pick(req.body)))
 })
 // PUT one deal
-router.put('/deal/:id', (req, res) => {
-  Deal.update(req.body, { where: { id: req.params.id } })
-    .then(() => res.sendStatus(200))
-    .catch(err => console.error(err))
+router.put('/deal/:id', async (req, res) => {
+  await Deal.update(pick(req.body), { where: { id: req.params.id } })
+  res.sendStatus(200)
 })
-//Deals ID/
-router.put('/deals/:id/:status', (req, res) => {
-  Deal.update({stage:req.params.status}, { where: { id: req.params.id } })
-    .then(() => res.sendStatus(200))
-    .catch(err => console.error(err))
+// PUT deal stage (used by drag and drop)
+router.put('/deals/:id/:status', async (req, res) => {
+  await Deal.update({ stage: req.params.status }, { where: { id: req.params.id } })
+  res.sendStatus(200)
 })
 // DELETE one deal
-router.delete('/deal/:id', (req, res) => {
-  Deal.destroy({ where: { id: req.params.id } })
-    .then(() => res.sendStatus(200))
-    .catch(err => console.error(err))
+router.delete('/deal/:id', async (req, res) => {
+  await Deal.destroy({ where: { id: req.params.id } })
+  res.sendStatus(200)
 })
+
 module.exports = router

@@ -1,39 +1,35 @@
 const router = require('express').Router()
-const { User } = require('../models')
+const { User, Deal } = require('../models')
+
 // GET all users
-router.get('/users', (req, res) => {
-  User.findAll()
-    .then(users => res.json(users))
-    .catch(err => console.error(err))
+router.get('/users', async (req, res) => {
+  res.json(await User.findAll())
 })
 // GET one user
-router.get('/users/:id', (req, res) => {
-  User.findOne({ where: { id: req.params.id }, include: [Deal] })
-    .then(user => res.json(user))
-    .catch(err => console.error(err))
+router.get('/users/:id', async (req, res) => {
+  const user = await User.findByPk(req.params.id, { include: [Deal] })
+  if (!user) return res.sendStatus(404)
+  res.json(user)
 })
 // POST one user
-router.post('/users', (req, res) => {
-  User.create(req.body)
-    .then(user => res.json(user))
-    .catch(err => console.error(err))
+router.post('/users', async (req, res) => {
+  res.json(await User.create({ name: req.body.name }))
 })
 // PUT one user
-router.put('/users/:id', (req, res) => {
-  User.update(req.body, { where: { id: req.params.id } })
-    .then(() => res.sendStatus(200))
-    .catch(err => console.error(err))
+router.put('/users/:id', async (req, res) => {
+  await User.update({ name: req.body.name }, { where: { id: req.params.id } })
+  res.sendStatus(200)
 })
 // DELETE one user
-router.delete('/users/:id', (req, res) => {
-  User.destroy({ where: { id: req.params.id } })
-    .then(() => res.sendStatus(200))
-    .catch(err => console.error(err))
+router.delete('/users/:id', async (req, res) => {
+  await User.destroy({ where: { id: req.params.id } })
+  res.sendStatus(200)
 })
 // Log In one user
-router.get('/login/:name', (req, res) => {
-  User.findOne({ where: { name: req.params.name } })
-    .then(user => res.json(user))
-    .catch(err => console.error(err))
+router.get('/login/:name', async (req, res) => {
+  const user = await User.findOne({ where: { name: req.params.name } })
+  if (!user) return res.sendStatus(404)
+  res.json(user)
 })
+
 module.exports = router

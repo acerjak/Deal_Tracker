@@ -23,7 +23,7 @@ function isNameUnique(username) {
       //return error, and send back to homepage
       alert("Sorry username already exists... try again");
       console.log("false")
-      location.reload()
+      return location.reload()
     }
   }
   //if no match in db
