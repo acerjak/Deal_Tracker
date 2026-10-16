@@ -12,7 +12,7 @@
 #### Please follow this command to install npm dependencies:
 > npm i
 
-Copy `.env.example` to `.env` and set `LOCAL_URL` to a MySQL database (requires Node 18+).
+Copy `.env.example` to `.env`, set `SESSION_SECRET` (`openssl rand -hex 32`) and set `LOCAL_URL` to a MySQL database (requires Node 18+).
 
 Create a dedicated database user instead of using `root`:
 
@@ -24,13 +24,15 @@ GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,ALTER,INDEX,DROP,REFERENCES ON deal_tra
 
 Tables are created on startup. After changing a model, back up (`mysqldump -u deal_tracker -p deal_tracker > backup.sql`), then start once with `DB_SYNC_ALTER=true` to apply the change to existing tables. Adding a unique or NOT NULL constraint fails if existing rows violate it, so clean those first.
 
+`npm test` runs the API tests against `TEST_DATABASE_URL` (its name must end in `_test`; the tests wipe it).
+
 `npm start` runs the server; `npm run dev` restarts it on file changes.
 
 ## Deployed Link
 > https://deal-tracker-app.herokuapp.com/deals.html
 
 ## Usage
-> Enables the user to: create, track, update and delete deals.
+> Enables the user to: sign up with an email and password, then create, track, update and delete their own deals. Passwords are bcrypt-hashed, sessions are httpOnly cookies, and every deal query is scoped to the logged-in user.
 
 ![Deal Tracker Demo](./public/assets/img/Deal-Tracker-Demo.gif)
 

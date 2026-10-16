@@ -1,10 +1,14 @@
+//a 401 anywhere means the session ended; go back to sign in
+axios.interceptors.response.use(r => r, err => {
+  if (err.response?.status === 401) window.location = '/'
+  return Promise.reject(err)
+})
 //define currentId
 let currentId = 0
 //event listener for signing out the user
 document.getElementById('signOut').addEventListener('click', event => {
   event.preventDefault()
-  localStorage.clear();
-  window.location = '/index.html'
+  axios.post('/api/auth/logout').finally(() => { window.location = '/' })
 })
 // Listen for click on "+ Add a Deal" button on 'Lead' stage and open modal with fields for creating a new deal
 document.getElementById('addDealButton').addEventListener('click', event => {
@@ -74,24 +78,19 @@ function validateForm() {
       phone: document.getElementById('dealPhone').value,
       email: document.getElementById('dealEmail').value,
       notes: document.getElementById('dealNotes').value,
-      stage: document.getElementById('dealStage').value,
-      userId: localStorage.getItem("users")
+      stage: document.getElementById('dealStage').value
     })
     .then(({data}) => renderDeal(data))
     .catch(err => console.log(err))
   })
 //show all deals for user
-function showDealsbyUser(userId){
-  //define userId
-   userId = localStorage.getItem("users")
-  //  console.log(userId)
-  //get all deals by this userId
-  axios.get("/api/deals/" + userId)
+function showDealsbyUser(){
+  axios.get("/api/deals")
   .then(({data}) => data.forEach(renderDeal))
   .catch(err => console.log(err))
 }
-//function to get all deals by username on page load
-showDealsbyUser(localStorage.getItem("users"))
+//load the signed-in user's deals on page load
+showDealsbyUser()
 //button functionality for edit/update deal for specific user
 const displayDeal = ((id, event) => {
     event.preventDefault()
@@ -134,8 +133,7 @@ document.getElementById("updateDeal").addEventListener("click", event => {
       phone: document.getElementById('dealPhone').value,
       email: document.getElementById('dealEmail').value,
       notes: document.getElementById('dealNotes').value,
-      stage: document.getElementById('dealStage').value,
-      userId: localStorage.getItem("users")
+      stage: document.getElementById('dealStage').value
 })
   .then(() => location.reload())
   .catch(err => console.log(err))

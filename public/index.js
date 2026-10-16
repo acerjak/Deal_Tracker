@@ -1,60 +1,39 @@
+// already signed in? skip straight to the deals page
+axios.get('/api/auth/me').then(() => { window.location = '/deals.html' }).catch(() => {})
+
+const showError = (id, err) => {
+  const box = document.getElementById(id)
+  box.textContent = err.response?.data?.error || 'Something went wrong, please try again'
+  box.style.display = 'block'
+}
+
 //modal for signUp button
 document.getElementById('signUpPage').addEventListener('click', event => {
   event.preventDefault()
-  //show modal
   $('.ui.modal').modal('show')
 })
-// button functionality for signing up and storing login in Local Storage
+
+// create an account; the server logs the new user in and rejects duplicate emails
 document.getElementById('signUp').addEventListener('click', event => {
   event.preventDefault()
-  //run validation on username input
-  isNameUnique()
-})
-function isNameUnique(username) {
-  // console.log(username)
-  //get all users
-  axios.get("/api/users/") 
-  .then(({data}) => {
-    console.log(data)
-    //go through array of users and check if matches any existing users
-  for (i = 0; i < data.length; i++) {
-    //if matches
-    if(data[i].name === document.getElementById("newUsername").value) {
-      //return error, and send back to homepage
-      alert("Sorry username already exists... try again");
-      console.log("false")
-      return location.reload()
-    }
-  }
-  //if no match in db
-    console.log("true") 
-    //create new username
-    axios.post('/api/users', {
-    name: document.getElementById('newUsername').value
-    })
-      .then(({ data }) => {
-      // console.log(data)
-      //add key value pair to local storage
-      localStorage.setItem('users', data.id)
-      //change window to deals
-      window.location = '/deals.html'
+  axios.post('/api/auth/register', {
+    name: document.getElementById('newName').value,
+    email: document.getElementById('newEmail').value,
+    password: document.getElementById('newPassword').value
   })
-}) 
-  .catch(err => console.error(err))
-}
-// button functionality for signing in and storing login in Local Storage
-document.getElementById('signIn').addEventListener('click', event => {
-  event.preventDefault()
-  //get username ID for login 
-  axios.get(`api/login/${document.getElementById('username').value}`)
-    .then(({ data }) => {
-      // console.log(data)
-      //put key value pair into local storage
-      localStorage.setItem('users', data.id)
-      //change window to deals/html
-      window.location = '/deals.html'
-    })
-    .catch(err => console.error(err))
+    .then(() => { window.location = '/deals.html' })
+    .catch(err => showError('signUpError', err))
 })
 
-
+// sign in; the session lives in an httpOnly cookie, nothing is stored in the browser
+const signIn = event => {
+  event.preventDefault()
+  axios.post('/api/auth/login', {
+    email: document.getElementById('email').value,
+    password: document.getElementById('password').value
+  })
+    .then(() => { window.location = '/deals.html' })
+    .catch(err => showError('signInError', err))
+}
+document.getElementById('signIn').addEventListener('click', signIn)
+document.getElementById('signInForm').addEventListener('submit', signIn)
