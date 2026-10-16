@@ -10,6 +10,9 @@ const { requirePage } = require('./middleware/requireAuth')
 if (!process.env.SESSION_SECRET) {
   throw new Error('Set SESSION_SECRET (a long random string) in your environment or .env file')
 }
+if (process.env.SESSION_SECRET === 'change-me') {
+  throw new Error('SESSION_SECRET is still the "change-me" placeholder; generate one with: openssl rand -hex 32')
+}
 
 const app = express()
 const isProd = process.env.NODE_ENV === 'production'

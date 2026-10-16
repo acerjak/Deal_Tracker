@@ -1,7 +1,7 @@
 require('dotenv').config()
 const url = process.env.TEST_DATABASE_URL
 // tests drop and recreate tables, so refuse to run against anything that isn't clearly a test database
-if (!url || !/_test(\?|$)/.test(url)) throw new Error('Set TEST_DATABASE_URL to a database whose name ends in _test')
+if (!url || url.includes('change-me') || !/_test(\?|$)/.test(url)) throw new Error('Set TEST_DATABASE_URL to a database whose name ends in _test')
 process.env.LOCAL_URL = url
 delete process.env.JAWSDB_URL
 process.env.NODE_ENV = 'test'
