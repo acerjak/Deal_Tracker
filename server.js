@@ -1,15 +1,11 @@
-require('dotenv').config()
-const express = require('express')
-const { join } = require('path')
-const app = express()
+const { app, sessionStore, sequelize } = require('./app')
+const port = process.env.PORT || 3000
 
-app.use(express.static(join(__dirname, 'public')))
-app.use(express.urlencoded({ extended: true }))
-app.use(express.json())
-
-app.use(require('./routes'))
-
-require('./connections')
-  .sync()
-  .then(() => app.listen(process.env.PORT || 3000, () => console.log('http://localhost:3000')))
-  .catch(err => console.error(err))
+sequelize
+  .sync(process.env.DB_SYNC_ALTER === 'true' ? { alter: true } : {})
+  .then(() => sessionStore.sync())
+  .then(() => app.listen(port, () => console.log(`http://localhost:${port}`)))
+  .catch(err => {
+    console.error(err)
+    process.exit(1)
+  })

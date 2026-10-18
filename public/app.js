@@ -1,10 +1,14 @@
+//a 401 anywhere means the session ended; go back to sign in
+axios.interceptors.response.use(r => r, err => {
+  if (err.response?.status === 401) window.location = '/'
+  return Promise.reject(err)
+})
 //define currentId
 let currentId = 0
 //event listener for signing out the user
 document.getElementById('signOut').addEventListener('click', event => {
   event.preventDefault()
-  localStorage.clear();
-  window.location = '/index.html'
+  axios.post('/api/auth/logout').finally(() => { window.location = '/' })
 })
 // Listen for click on "+ Add a Deal" button on 'Lead' stage and open modal with fields for creating a new deal
 document.getElementById('addDealButton').addEventListener('click', event => {
@@ -27,6 +31,25 @@ document.getElementById('addDealButton').addEventListener('click', event => {
     .dropdown()
     ;
 })
+//escape user-provided text before inserting into HTML
+const esc = str => String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+//build a deal card and append it to its stage column
+function renderDeal(data) {
+  let dealElem = document.createElement('div')
+  dealElem.innerHTML = `
+  <div class="ui raised card" draggable="true" ondragstart="drag(event)" id="${data.id}">
+    <div class="content">
+      <div class="header">${esc(data.dealName)}</div>
+      <div class="description">
+        <h5>Value: ${esc(data.value)}</h5>
+      </div>
+    </div>
+    <div class="extra content">
+      <button class="mini ui primary button" id="edit${data.id}" onclick="displayDeal(${Number(data.id)}, event)">Edit Deal</button>
+    </div>
+  </div>`
+  document.getElementById(data.stage).append(dealElem)
+}
 //function to alert to fill out all inputs
 function validateForm() {
   var x = document.forms["DealForm"]["dealName"].value;
@@ -39,12 +62,13 @@ function validateForm() {
       alert("Deal value cannot be blank.");
       return false;
   }
+  return true;
 }
 //button functionality for adding a new deal for specific user
   document.getElementById('submitDeal').addEventListener('click', event => {
     event.preventDefault()
     //run function for Deal Name input validation
-    validateForm()
+    if (!validateForm()) return
     //create new deal with input values
     axios.post(`api/deals`, {
       dealName: document.getElementById('dealName').value,
@@ -54,67 +78,21 @@ function validateForm() {
       phone: document.getElementById('dealPhone').value,
       email: document.getElementById('dealEmail').value,
       notes: document.getElementById('dealNotes').value,
-      stage: document.getElementById('dealStage').value,
-      userId: localStorage.getItem("users")
+      stage: document.getElementById('dealStage').value
     })
-    //create new deal element with data values
-    .then(({data}) => {
-      console.log(data)
-      let dealElem = document.createElement('div')
-      dealElem.innerHTML = `
-      <div class="ui raised card" draggable="true" ondragstart="drag(event)" id="${data.id}">
-      <div class="content">
-        <div class="header">${data.dealName}</div>
-          <div class="description">
-            <h5>Value: ${data.value}</h5>
-          </div>
-        </div>
-          <div class="extra content">
-          <button class="mini ui primary button" id="edit${data.id}" onclick="displayDeal(${data.id})">Edit Deal</button>
-          </div>
-    </div>`
-      console.log(dealElem)
-      //append to page
-      document.getElementById(`${data.stage}`).append(dealElem)
-    })
+    .then(({data}) => renderDeal(data))
     .catch(err => console.log(err))
   })
 //show all deals for user
-function showDealsbyUser(userId){
-  //define userId
-   userId = localStorage.getItem("users")
-  //  console.log(userId)
-  //get all deals by this userId
-  axios.get("/api/deals/" + userId)  
-  .then(({data}) => {
-    console.log(data)
-    //define data as array
-let array = data
-//run through array and create objects from data
-array.map(data=>{
-  let dealElem = document.createElement('div')
-  dealElem.innerHTML = `
-  <div class="ui raised card" draggable="true" ondragstart="drag(event)" id="${data.id}">
-    <div class="content">
-      <div class="header">${data.dealName}</div>
-        <div class="description">
-          <h5>Value: ${data.value}</h5>
-        </div>
-      </div>
-        <div class="extra content">
-        <button class="mini ui primary button" id="edit${data.id}" onclick="displayDeal(${data.id})">Edit Deal</button>
-        </div>
-  </div>`
-  console.log(dealElem)
-  //append to page
-  document.getElementById(`${data.stage}`).append(dealElem)
-})
-})
+function showDealsbyUser(){
+  axios.get("/api/deals")
+  .then(({data}) => data.forEach(renderDeal))
+  .catch(err => console.log(err))
 }
-//function to get all deals by username on page load
-showDealsbyUser(localStorage.getItem("users"))
+//load the signed-in user's deals on page load
+showDealsbyUser()
 //button functionality for edit/update deal for specific user
-const displayDeal = (id => {
+const displayDeal = ((id, event) => {
     event.preventDefault()
     //redefine currentId as id
     currentId = id
@@ -155,11 +133,9 @@ document.getElementById("updateDeal").addEventListener("click", event => {
       phone: document.getElementById('dealPhone').value,
       email: document.getElementById('dealEmail').value,
       notes: document.getElementById('dealNotes').value,
-      stage: document.getElementById('dealStage').value,
-      userId: localStorage.getItem("users")
+      stage: document.getElementById('dealStage').value
 })
-//reload page with this updated deal
-  location.reload()
+  .then(() => location.reload())
   .catch(err => console.log(err))
 })
   //button functionality for delete deal for specific user
@@ -167,10 +143,9 @@ document.getElementById("updateDeal").addEventListener("click", event => {
     event.preventDefault()
     // console.log(currentId)
     //delete this deal by id
-    axios.delete("api/deal/" + currentId) 
-    //reload page with updated deals
-    location.reload()
-    .catch(err => console.log(err))
+    axios.delete("api/deal/" + currentId)
+      .then(() => location.reload())
+      .catch(err => console.log(err))
 })
 
 
