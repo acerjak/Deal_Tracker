@@ -114,6 +114,10 @@ test('deals page redirects when logged out, serves when logged in', async () => 
   assert.equal(out.headers.get('location'), '/')
   const c = await signUp('Pat', 'pat@example.com')
   assert.equal((await c('GET', '/deals.html')).status, 200)
+  // and the sign-in page sends signed-in visitors on to their deals
+  const home = await c('GET', '/')
+  assert.equal(home.status, 302)
+  assert.equal(home.headers.get('location'), '/deals.html')
 })
 
 test('users cannot see or change each other\'s deals', async () => {
@@ -155,4 +159,11 @@ test('owner can edit, move and delete; bad stage rejected', async () => {
   assert.deepEqual((await a('GET', `/api/deal/${id}`)).body.stage, 'Won')
   assert.equal((await a('DELETE', `/api/deal/${id}`)).status, 200)
   assert.equal((await a('GET', `/api/deal/${id}`)).status, 404)
+})
+
+test('CSP blocks inline scripts and handlers', async () => {
+  const csp = (await client()('GET', '/')).headers.get('content-security-policy')
+  assert.match(csp, /script-src 'self' https:\/\/cdnjs\.cloudflare\.com https:\/\/unpkg\.com/)
+  assert.match(csp, /script-src-attr 'none'/)
+  assert.doesNotMatch(csp, /script-src[^;]*unsafe-inline/)
 })

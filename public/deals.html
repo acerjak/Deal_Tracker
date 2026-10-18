@@ -35,8 +35,7 @@
                         <div class="content">
                             <div class="header">Lead</div>
                         </div>
-                        <div class="content left aligned stageBackground" ondrop="drop(event, this)"
-                            ondragover="allowDrop(event)" id="Lead">
+                        <div class="content left aligned stageBackground" id="Lead">
                         </div>
                     </div>
                 </div>
@@ -47,8 +46,7 @@
                         <div class="content">
                             <div class="header">Contacted</div>
                         </div>
-                        <div class="content left aligned stageBackground" ondrop="drop(event, this)"
-                            ondragover="allowDrop(event)" id="Contacted">
+                        <div class="content left aligned stageBackground" id="Contacted">
                         </div>
                     </div>
                 </div>
@@ -59,8 +57,7 @@
                         <div class="content">
                             <div class="header">Qualified</div>
                         </div>
-                        <div class="content left aligned stageBackground" ondrop="drop(event, this)"
-                            ondragover="allowDrop(event)" id="Qualified">
+                        <div class="content left aligned stageBackground" id="Qualified">
                         </div>
                     </div>
                 </div>
@@ -71,8 +68,7 @@
                         <div class="content">
                             <div class="header">Proposal Made</div>
                         </div>
-                        <div class="content left aligned stageBackground" ondrop="drop(event, this)"
-                            ondragover="allowDrop(event)" id="Proposal">
+                        <div class="content left aligned stageBackground" id="Proposal">
                         </div>
                     </div>
                 </div>
@@ -86,8 +82,7 @@
                                 <div class="content">
                                     <div class="header">Won Deals</div>
                                 </div>
-                                <div class="content left aligned stageBackgroundEnd" ondrop="drop(event, this)"
-                                    ondragover="allowDrop(event)" id="Won"></div>
+                                <div class="content left aligned stageBackgroundEnd" id="Won"></div>
                             </div>
                         </div>
                     </div>
@@ -99,8 +94,7 @@
                                 <div class="content">
                                     <div class="header">Lost Deals</div>
                                 </div>
-                                <div class="content left aligned stageBackgroundEnd" ondrop="drop(event, this)"
-                                    ondragover="allowDrop(event)" id="Loss"></div>
+                                <div class="content left aligned stageBackgroundEnd" id="Loss"></div>
                             </div>
                         </div>
                     </div>
@@ -120,11 +114,11 @@
                 <div class="fields">
                     <div class="twelve wide field">
                         <label>Deal Name</label>
-                        <input type="text" name="dealName" onsubmit="validateForm()" placeholder="Deal Name" id="dealName">
+                        <input type="text" name="dealName" placeholder="Deal Name" id="dealName" required>
                     </div>
                     <div class="six wide field">
                         <label>Deal Value (amount in $)</label>
-                        <input type="number" name="dealValue" onsubmit="validateForm()" placeholder="Deal Value" id="dealValue">
+                        <input type="number" name="dealValue" placeholder="Deal Value" id="dealValue" min="0" step="1" required>
                     </div>
                 </div>
                 <div class="fields">
@@ -196,7 +190,6 @@
     <!-- Script -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.8.5/semantic.min.js"></script>
-    <script src="./assets/js/style.js"></script>
     <script src="https://unpkg.com/axios@1/dist/axios.min.js"></script>
     <script src="./app.js"></script>
 </body>

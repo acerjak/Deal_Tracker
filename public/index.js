@@ -1,6 +1,3 @@
-// already signed in? skip straight to the deals page
-axios.get('/api/auth/me').then(() => { window.location = '/deals.html' }).catch(() => {})
-
 const showError = (id, err) => {
   const box = document.getElementById(id)
   box.textContent = err.response?.data?.error || 'Something went wrong, please try again'
