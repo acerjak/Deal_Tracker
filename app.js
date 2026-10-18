@@ -33,6 +33,9 @@ app.use(helmet({
 }))
 app.use(express.json())
 
+// health check for the host; placed before sessions so it never touches the database
+app.get('/healthz', (req, res) => res.sendStatus(200))
+
 const sessionStore = new SequelizeStore({ db: sequelize, tableName: 'sessions' })
 app.use(session({
   secret: process.env.SESSION_SECRET,

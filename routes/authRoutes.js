@@ -2,7 +2,13 @@ const router = require('express').Router()
 const bcrypt = require('bcrypt')
 const { promisify } = require('util')
 const rateLimit = require('express-rate-limit')
+const { Op } = require('sequelize')
 const { User } = require('../models')
+const { demoOnly, isDemoEmail, sweepDemoUsers, createDemoUser } = require('../lib/demo')
+
+// caps keep a public free-tier database from filling up; read at request time so tests can change them
+const maxUsers = () => Number(process.env.MAX_USERS) || 500
+const maxDemoUsers = () => Number(process.env.MAX_DEMO_USERS) || 100
 
 const ROUNDS = 12
 // compared against when the email is unknown, so timing doesn't reveal which emails exist
@@ -28,7 +34,22 @@ router.post('/auth/register', limit(60 * 60 * 1000, 20), async (req, res) => {
   if (!validPassword(password)) {
     return res.status(400).json({ error: 'Password must be 8 to 72 characters' })
   }
+  if (isDemoEmail(email)) return res.status(400).json({ error: 'That email domain is reserved' })
+  if (await User.count({ where: { [Op.not]: demoOnly } }) >= maxUsers()) {
+    return res.status(503).json({ error: 'Sign-ups are full right now. Try the demo instead.' })
+  }
   const user = await User.create({ name, email, passwordHash: await bcrypt.hash(password, ROUNDS) })
+  await startSession(req, user)
+  res.status(201).json(user)
+})
+
+// one-click demo: a throwaway account with sample deals, so visitors never share data
+router.post('/auth/demo', limit(60 * 60 * 1000, 10), async (req, res) => {
+  await sweepDemoUsers()
+  if (await User.count({ where: demoOnly }) >= maxDemoUsers()) {
+    return res.status(503).json({ error: 'The demo is busy right now. Please try again later.' })
+  }
+  const user = await createDemoUser()
   await startSession(req, user)
   res.status(201).json(user)
 })

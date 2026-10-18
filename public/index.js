@@ -34,3 +34,11 @@ const signIn = event => {
 }
 document.getElementById('signIn').addEventListener('click', signIn)
 document.getElementById('signInForm').addEventListener('submit', signIn)
+
+// one-click demo account with sample deals
+document.getElementById('tryDemo').addEventListener('click', event => {
+  event.preventDefault()
+  axios.post('/api/auth/demo')
+    .then(() => { window.location = '/deals.html' })
+    .catch(err => showError('signInError', err))
+})
