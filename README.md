@@ -2,17 +2,20 @@
 ## Description
 > Deal Tracker is an application that makes it easy for sales executives to track deals through the sales life cycle.
 ## Table of Contents
+* [About This Version](#about-this-version)
 * [Installation](#installation)
 * [Usage](#usage)
-* [License](#license)
 * [Team](#team)
 * [Questions](#questions)
+
+## About This Version
+> Deal Tracker started as a June 2020 team project. This version brings it up to date while keeping the original look: Express 5, Sequelize 6 and MySQL on the back end, email and password accounts with bcrypt and database-backed sessions, per-user data access, a Content-Security-Policy, and an automated API test suite.
 
 ## Installation
 #### Please follow this command to install npm dependencies:
 > npm i
 
-Copy `.env.example` to `.env`, set `SESSION_SECRET` (`openssl rand -hex 32`) and set `LOCAL_URL` to a MySQL database (requires Node 18+).
+Copy `.env.example` to `.env`, set `SESSION_SECRET` (`openssl rand -hex 32`) and set `LOCAL_URL` to a MySQL database (requires Node 22+).
 
 Create a dedicated database user instead of using `root`:
 
@@ -28,25 +31,19 @@ Tables are created on startup. After changing a model, back up (`mysqldump -u de
 
 `npm start` runs the server; `npm run dev` restarts it on file changes.
 
-## Deployed Link
-> https://deal-tracker-app.herokuapp.com/deals.html
-
 ## Usage
 > Enables the user to: sign up with an email and password, then create, track, update and delete their own deals. Passwords are bcrypt-hashed, sessions are httpOnly cookies, and every deal query is scoped to the logged-in user.
 
 ![Deal Tracker Demo](./public/assets/img/Deal-Tracker-Demo.gif)
 
 ## Team
-Amanda Cerjak: [acerjak](https://api.github.com/users/acerjak "GitHub Profile")
+Amanda Cerjak: [acerjak](https://github.com/acerjak "GitHub Profile")
 
 Ian Kirby: [vertjames](https://github.com/vertjames "GitHub Profile")
 
 Logan Morris: [Logan96M](https://github.com/Logan96M "GitHub Profile")
 
 Jordan Muliaman: [jmuliaman97](https://github.com/jmuliaman97 "GitHub Profile")
-
-## License
-<img src='https://img.shields.io/badge/License-MIT-blue' alt='License Badge'>
 
 ## Questions
 > Please let us know if you have any questions!
