@@ -3,7 +3,7 @@ const url = process.env.TEST_DATABASE_URL
 // tests drop and recreate tables, so refuse to run against anything that isn't clearly a test database
 if (!url || url.includes('change-me') || !/_test(\?|$)/.test(url)) throw new Error('Set TEST_DATABASE_URL to a database whose name ends in _test')
 process.env.LOCAL_URL = url
-delete process.env.JAWSDB_URL
+delete process.env.DATABASE_URL
 process.env.NODE_ENV = 'test'
 process.env.SESSION_SECRET = 'test-secret'
 
@@ -114,6 +114,10 @@ test('deals page redirects when logged out, serves when logged in', async () => 
   assert.equal(out.headers.get('location'), '/')
   const c = await signUp('Pat', 'pat@example.com')
   assert.equal((await c('GET', '/deals.html')).status, 200)
+  // and the sign-in page sends signed-in visitors on to their deals
+  const home = await c('GET', '/')
+  assert.equal(home.status, 302)
+  assert.equal(home.headers.get('location'), '/deals.html')
 })
 
 test('users cannot see or change each other\'s deals', async () => {
@@ -155,4 +159,64 @@ test('owner can edit, move and delete; bad stage rejected', async () => {
   assert.deepEqual((await a('GET', `/api/deal/${id}`)).body.stage, 'Won')
   assert.equal((await a('DELETE', `/api/deal/${id}`)).status, 200)
   assert.equal((await a('GET', `/api/deal/${id}`)).status, 404)
+})
+
+test('CSP blocks inline scripts and handlers', async () => {
+  const csp = (await client()('GET', '/')).headers.get('content-security-policy')
+  assert.match(csp, /script-src 'self' https:\/\/cdnjs\.cloudflare\.com https:\/\/unpkg\.com/)
+  assert.match(csp, /script-src-attr 'none'/)
+  assert.doesNotMatch(csp, /script-src[^;]*unsafe-inline/)
+})
+
+test('health check works without a session or database', async () => {
+  const r = await client()('GET', '/healthz')
+  assert.equal(r.status, 200)
+})
+
+test('demo: one click gives a private account with sample deals in every stage', async () => {
+  const a = client()
+  const made = await a('POST', '/api/auth/demo')
+  assert.equal(made.status, 201)
+  assert.match(made.body.email, /@demo\.invalid$/)
+  const deals = (await a('GET', '/api/deals')).body
+  assert.deepEqual([...new Set(deals.map(d => d.stage))].sort(), ['Contacted', 'Lead', 'Loss', 'Proposal', 'Qualified', 'Won'])
+  // a second visitor gets their own copy and cannot see the first one's
+  const b = client()
+  await b('POST', '/api/auth/demo')
+  const bDeals = (await b('GET', '/api/deals')).body
+  assert.equal(bDeals.some(d => deals.some(x => x.id === d.id)), false)
+  assert.equal((await b('GET', `/api/deal/${deals[0].id}`)).status, 404)
+})
+
+test('demo: accounts older than a day are swept with their deals', async () => {
+  const { User, Deal } = require('../models')
+  const a = client()
+  const old = (await a('POST', '/api/auth/demo')).body
+  await sequelize.query('UPDATE users SET createdAt = ? WHERE id = ?', { replacements: [new Date(Date.now() - 25 * 3600 * 1000), old.id] })
+  await client()('POST', '/api/auth/demo')
+  assert.equal(await User.count({ where: { id: old.id } }), 0)
+  assert.equal(await Deal.count({ where: { userId: old.id } }), 0)
+})
+
+test('demo: capped, and the reserved domain cannot be registered', async () => {
+  const { User } = require('../models')
+  process.env.MAX_DEMO_USERS = '1'
+  const full = await client()('POST', '/api/auth/demo')
+  delete process.env.MAX_DEMO_USERS
+  assert.equal(full.status, 503)
+  const r = await client()('POST', '/api/auth/register', { name: 'x', email: 'sneaky@demo.invalid', password: 'correct horse' })
+  assert.equal(r.status, 400)
+  assert.equal(await User.count({ where: { email: 'sneaky@demo.invalid' } }), 0)
+})
+
+test('sign-ups stop at the user cap but logins still work', async () => {
+  const { User } = require('../models')
+  const { Op } = require('sequelize')
+  const real = await User.count({ where: { email: { [Op.notLike]: '%@demo.invalid' } } })
+  process.env.MAX_USERS = String(real)
+  const blocked = await client()('POST', '/api/auth/register', { name: 'x', email: 'late@example.com', password: 'correct horse' })
+  const login = await client()('POST', '/api/auth/login', { email: 'ann@example.com', password: 'correct horse' })
+  delete process.env.MAX_USERS
+  assert.equal(blocked.status, 503)
+  assert.equal(login.status, 200)
 })

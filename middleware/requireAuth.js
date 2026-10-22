@@ -10,4 +10,10 @@ const requirePage = (req, res, next) => {
   next()
 }
 
-module.exports = { requireAuth, requirePage }
+// sign-in page guard: logged-in visitors go straight to their deals
+const skipIfSignedIn = (req, res, next) => {
+  if (req.session.userId) return res.redirect('/deals.html')
+  next()
+}
+
+module.exports = { requireAuth, requirePage, skipIfSignedIn }

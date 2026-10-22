@@ -1,6 +1,3 @@
-// already signed in? skip straight to the deals page
-axios.get('/api/auth/me').then(() => { window.location = '/deals.html' }).catch(() => {})
-
 const showError = (id, err) => {
   const box = document.getElementById(id)
   box.textContent = err.response?.data?.error || 'Something went wrong, please try again'
@@ -37,3 +34,11 @@ const signIn = event => {
 }
 document.getElementById('signIn').addEventListener('click', signIn)
 document.getElementById('signInForm').addEventListener('submit', signIn)
+
+// one-click demo account with sample deals
+document.getElementById('tryDemo').addEventListener('click', event => {
+  event.preventDefault()
+  axios.post('/api/auth/demo')
+    .then(() => { window.location = '/deals.html' })
+    .catch(err => showError('signInError', err))
+})

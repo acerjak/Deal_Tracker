@@ -1,0 +1,24 @@
+# Render Blueprint: deploys the app as a free web service.
+# The database is external (TiDB Cloud Starter); set DATABASE_URL when Render prompts for it.
+services:
+  - name: deal-tracker
+    type: web
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    # deploy only after the GitHub Actions tests pass
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: DB_SSL
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true

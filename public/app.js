@@ -1,151 +1,149 @@
-//a 401 anywhere means the session ended; go back to sign in
-axios.interceptors.response.use(r => r, err => {
+// all API calls go through one axios instance
+const api = axios.create({ baseURL: '/api' })
+
+// a 401 anywhere means the session ended; go back to sign in
+api.interceptors.response.use(r => r, err => {
   if (err.response?.status === 401) window.location = '/'
   return Promise.reject(err)
 })
-//define currentId
-let currentId = 0
-//event listener for signing out the user
-document.getElementById('signOut').addEventListener('click', event => {
-  event.preventDefault()
-  axios.post('/api/auth/logout').finally(() => { window.location = '/' })
-})
-// Listen for click on "+ Add a Deal" button on 'Lead' stage and open modal with fields for creating a new deal
-document.getElementById('addDealButton').addEventListener('click', event => {
-  event.preventDefault()
-  document.getElementById('updateDeal').style.display = 'none'
-  document.getElementById('submitDeal').style.display = 'inline'
-  document.getElementById('deleteDeal').style.display = 'none'
-  document.getElementById('dealName').value = ''
-  document.getElementById('dealValue').value = ''
-  document.getElementById('dealOrg').value = ''
-  document.getElementById('dealContact').value = ''
-  document.getElementById('dealPhone').value = ''
-  document.getElementById('dealEmail').value = ''
-  document.getElementById('dealNotes').value = ''
-  document.getElementById('dealStage').value = 'Lead'
-  //show modal
-  $('.ui.modal').modal('show')
-  // Give functionality to dropdown in form:
-  $('.selection.dropdown')
-    .dropdown()
-    ;
-})
-//escape user-provided text before inserting into HTML
+
+const $id = id => document.getElementById(id)
+const show = (el, visible) => { el.style.display = visible ? '' : 'none' }
+const fail = err => {
+  if (err.response?.status !== 401) alert(err.response?.data?.error || 'Something went wrong, please try again')
+}
+
+// deal property -> id of its form input; the single place that knows the form's fields
+const FIELDS = {
+  dealName: 'dealName',
+  value: 'dealValue',
+  organization: 'dealOrg',
+  contact: 'dealContact',
+  phone: 'dealPhone',
+  email: 'dealEmail',
+  notes: 'dealNotes',
+  stage: 'dealStage'
+}
+const readForm = () => Object.fromEntries(Object.entries(FIELDS).map(([key, id]) => [key, $id(id).value]))
+const fillForm = deal => {
+  Object.entries(FIELDS).forEach(([key, id]) => { $id(id).value = deal[key] ?? '' })
+  // the stage input is managed by the dropdown widget, so keep its label in sync
+  $('.selection.dropdown').dropdown(deal.stage ? 'set selected' : 'clear', deal.stage)
+}
+
+// escape user-provided text before inserting into HTML
 const esc = str => String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
-//build a deal card and append it to its stage column
-function renderDeal(data) {
-  let dealElem = document.createElement('div')
-  dealElem.innerHTML = `
-  <div class="ui raised card" draggable="true" ondragstart="drag(event)" id="${data.id}">
-    <div class="content">
-      <div class="header">${esc(data.dealName)}</div>
-      <div class="description">
-        <h5>Value: ${esc(data.value)}</h5>
+const cardSelector = id => `.card[data-id="${id}"]`
+
+// build a deal card in its stage column, or replace the existing card in place
+function renderDeal(deal) {
+  const wrapper = document.createElement('div')
+  wrapper.innerHTML = `
+    <div class="ui raised card" draggable="true" data-id="${Number(deal.id)}">
+      <div class="content">
+        <div class="header">${esc(deal.dealName)}</div>
+        <div class="description">
+          <h5>Value: ${esc(deal.value)}</h5>
+        </div>
       </div>
-    </div>
-    <div class="extra content">
-      <button class="mini ui primary button" id="edit${data.id}" onclick="displayDeal(${Number(data.id)}, event)">Edit Deal</button>
-    </div>
-  </div>`
-  document.getElementById(data.stage).append(dealElem)
+      <div class="extra content">
+        <button class="mini ui primary button" data-edit="${Number(deal.id)}">Edit Deal</button>
+      </div>
+    </div>`
+  const existing = document.querySelector(cardSelector(deal.id))?.parentElement
+  if (existing) existing.replaceWith(wrapper)
+  else $id(deal.stage).append(wrapper)
 }
-//function to alert to fill out all inputs
-function validateForm() {
-  var x = document.forms["DealForm"]["dealName"].value;
-  if (x == "") {
-      alert("Deal name cannot be blank.");
-      return false;
-  }
-  var y = document.forms["DealForm"]["dealValue"].value;
-  if (y == "") {
-      alert("Deal value cannot be blank.");
-      return false;
-  }
-  return true;
+
+// ----- deal form modal -----
+const modal = $('.ui.modal')
+// the action buttons manage closing themselves, so a failed save or invalid form keeps the modal open
+modal.modal({ onApprove: () => false, onDeny: button => !button.is('#deleteDeal') })
+$('.selection.dropdown').dropdown()
+
+let current = null // the deal being edited, or null when adding
+
+function openForm(deal) {
+  current = deal || null
+  const editing = Boolean(deal)
+  show($id('submitDeal'), !editing)
+  show($id('updateDeal'), editing)
+  show($id('deleteDeal'), editing)
+  show($id('stageDiv'), !editing)
+  fillForm(deal || { stage: 'Lead' })
+  modal.modal('show')
 }
-//button functionality for adding a new deal for specific user
-  document.getElementById('submitDeal').addEventListener('click', event => {
-    event.preventDefault()
-    //run function for Deal Name input validation
-    if (!validateForm()) return
-    //create new deal with input values
-    axios.post(`api/deals`, {
-      dealName: document.getElementById('dealName').value,
-      value: document.getElementById('dealValue').value,
-      organization: document.getElementById('dealOrg').value,
-      contact: document.getElementById('dealContact').value,
-      phone: document.getElementById('dealPhone').value,
-      email: document.getElementById('dealEmail').value,
-      notes: document.getElementById('dealNotes').value,
-      stage: document.getElementById('dealStage').value
-    })
-    .then(({data}) => renderDeal(data))
-    .catch(err => console.log(err))
-  })
-//show all deals for user
-function showDealsbyUser(){
-  axios.get("/api/deals")
-  .then(({data}) => data.forEach(renderDeal))
-  .catch(err => console.log(err))
-}
-//load the signed-in user's deals on page load
-showDealsbyUser()
-//button functionality for edit/update deal for specific user
-const displayDeal = ((id, event) => {
-    event.preventDefault()
-    //redefine currentId as id
-    currentId = id
-    console.log(currentId)
-    //show modal
-    $('.ui.modal').modal('show')
-    //update display buttons
-    document.getElementById('updateDeal').style.display = 'inline'
-    document.getElementById('deleteDeal').style.display = 'inline'
-    document.getElementById('submitDeal').style.display = 'none'
-    document.getElementById('stageDiv').style.display = 'none'
-    //get deal by id
-    axios.get("api/deal/" + id)
-    .then(({data}) => {
-      JSON.stringify(data)
-      console.log(data) 
-      //display all existing information within input areas for editing modal
-    document.getElementById('dealName').value = data.dealName
-    document.getElementById('dealValue').value = data.value
-    document.getElementById('dealOrg').value = data.organization
-    document.getElementById('dealContact').value = data.contact
-    document.getElementById('dealPhone').value = data.phone
-    document.getElementById('dealEmail').value = data.email
-    document.getElementById('dealNotes').value = data.notes
-    document.getElementById('dealStage').value = data.stage
-    })
-    .catch(err => console.log(err))
-  })
-//event listener for updating deal
-document.getElementById("updateDeal").addEventListener("click", event => {
-  console.log(currentId)
-  //update deal by id
-  axios.put("api/deal/" + currentId, {
-      dealName: document.getElementById('dealName').value,
-      value: document.getElementById('dealValue').value,
-      organization: document.getElementById('dealOrg').value,
-      contact: document.getElementById('dealContact').value,
-      phone: document.getElementById('dealPhone').value,
-      email: document.getElementById('dealEmail').value,
-      notes: document.getElementById('dealNotes').value,
-      stage: document.getElementById('dealStage').value
-})
-  .then(() => location.reload())
-  .catch(err => console.log(err))
-})
-  //button functionality for delete deal for specific user
-  document.getElementById("deleteDeal").addEventListener("click", event => {
-    event.preventDefault()
-    // console.log(currentId)
-    //delete this deal by id
-    axios.delete("api/deal/" + currentId)
-      .then(() => location.reload())
-      .catch(err => console.log(err))
+
+$id('addDealButton').addEventListener('click', () => openForm())
+
+// edit buttons live inside cards that are rendered later, so listen on the document
+document.addEventListener('click', async event => {
+  const button = event.target.closest('[data-edit]')
+  if (!button) return
+  try {
+    const { data } = await api.get(`/deal/${button.dataset.edit}`)
+    openForm(data)
+  } catch (err) { fail(err) }
 })
 
+$id('submitDeal').addEventListener('click', async () => {
+  if (!document.forms.DealForm.reportValidity()) return
+  try {
+    const { data } = await api.post('/deals', readForm())
+    renderDeal(data)
+    modal.modal('hide')
+  } catch (err) { fail(err) }
+})
 
+$id('updateDeal').addEventListener('click', async () => {
+  if (!document.forms.DealForm.reportValidity()) return
+  // stage changes happen by dragging, not in the edit form
+  const { stage, ...fields } = readForm()
+  try {
+    await api.put(`/deal/${current.id}`, fields)
+    renderDeal({ ...current, ...fields })
+    modal.modal('hide')
+  } catch (err) { fail(err) }
+})
+
+$id('deleteDeal').addEventListener('click', async () => {
+  try {
+    await api.delete(`/deal/${current.id}`)
+    document.querySelector(cardSelector(current.id))?.parentElement.remove()
+    modal.modal('hide')
+  } catch (err) { fail(err) }
+})
+
+$id('signOut').addEventListener('click', event => {
+  event.preventDefault()
+  api.post('/auth/logout').finally(() => { window.location = '/' })
+})
+
+// ----- drag and drop between stages -----
+document.addEventListener('dragstart', event => {
+  if (event.target.dataset?.id) event.dataTransfer.setData('text', event.target.dataset.id)
+})
+
+document.querySelectorAll('.stageBackground, .stageBackgroundEnd').forEach(column => {
+  column.addEventListener('dragover', event => event.preventDefault())
+  column.addEventListener('drop', async event => {
+    event.preventDefault()
+    const id = event.dataTransfer.getData('text')
+    // the dragged text could come from anywhere, so only accept a numeric deal id
+    const card = /^\d+$/.test(id) && document.querySelector(cardSelector(id))
+    if (!card) return
+    const wrapper = card.parentElement
+    const from = wrapper.parentElement
+    if (from === column) return
+    column.append(wrapper)
+    try {
+      await api.put(`/deals/${id}/${column.id}`)
+    } catch (err) {
+      from.append(wrapper) // put it back if the server refused
+      fail(err)
+    }
+  })
+})
+
+// ----- load the signed-in user's deals -----
+api.get('/deals').then(({ data }) => data.forEach(renderDeal)).catch(fail)
