@@ -6,6 +6,7 @@
 * [Installation](#installation)
 * [Usage](#usage)
 * [Deploying for Free](#deploying-for-free)
+* [Security](#security)
 * [Team](#team)
 * [Questions](#questions)
 
@@ -45,6 +46,22 @@ The app runs on [Render](https://render.com)'s free web service with a free [TiD
 3. **Visit the URL Render gives you.** Tables are created on first start. "Try the demo" on the sign-in page creates a throwaway account with sample deals; demo accounts are deleted after 24 hours. Sign-ups are capped (`MAX_USERS`, default 500) to protect the free database.
 
 Free-tier behavior: the service sleeps after 15 minutes without traffic, so the first visit afterwards takes about a minute to wake up. Limits change over time, so check the providers' current free-plan terms.
+
+## Security
+What the app does to protect its users:
+* **Passwords and sessions.** Passwords are bcrypt-hashed (12 rounds) and never returned by the API. Sessions live in the database; the cookie is `httpOnly`, `sameSite=lax` and `secure` in production, and the session id is regenerated on login and sign-up.
+* **Data isolation.** Every deal query is scoped to the signed-in user, and `userId` always comes from the session. Another user's deal looks like a 404.
+* **Abuse limits.** Rate limits on sign-in (10 per 15 minutes), sign-up and demo creation; caps on total accounts (`MAX_USERS`) and demo accounts (`MAX_DEMO_USERS`). Login timing does not reveal which emails exist.
+* **Browser protections.** Helmet headers, HSTS, and a Content-Security-Policy that blocks inline scripts. CDN scripts and styles use Subresource Integrity, and user-provided text is HTML-escaped before display.
+* **Startup checks.** The server refuses to start with placeholder secrets or database passwords.
+* **Dependencies.** Dependabot opens weekly update PRs and CI runs the tests before every deploy.
+
+Known and accepted:
+* `npm audit` reports a moderate `uuid` advisory via `sequelize`. It only affects `uuid` v3/v5/v6 called with a caller-supplied buffer, which Sequelize does not do. The suggested fix downgrades Sequelize to v3, so it is left alone until Sequelize ships an update.
+* Sign-up reveals whether an email is already registered. It is rate limited; avoiding it would need email verification.
+* Passwords are checked for length only (8 to 72 characters), not against breached-password lists.
+
+Operating tips: keep `DATABASE_URL` and `SESSION_SECRET` only in Render's environment (never commit `.env`), use a database user limited to this one database, and rotate `SESSION_SECRET` if it is ever exposed (this signs everyone out). Please report vulnerabilities privately through the repository's GitHub Security tab rather than a public issue.
 
 ## Team
 Amanda Cerjak: [acerjak](https://github.com/acerjak "GitHub Profile")
